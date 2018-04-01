@@ -1,0 +1,2 @@
+# strcalc
+simple string calculator
