@@ -57,26 +57,28 @@ func TestSub(t *testing.T) {
 }
 
 func TestBracketsRegexp(t *testing.T) {
-	n := "(82+1077-192+80+10)-161"
+	n := "(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800"
 	re := regexp.MustCompile(`\(([^\(].+?)\)`)
 	assert.Equal(t, true, re.MatchString(n))
 	f := re.FindStringSubmatch(n)[1]
-	assert.Equal(t, "82+1077-192+80+10", f)
+	assert.Equal(t, "91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636", f)
 	n = strings.Replace(n, "("+f+")", calc(f), 1)
-	assert.Equal(t, "1057-161", n)
+	assert.Equal(t, "4999999%800", n)
 }
 
 func TestBrackets(t *testing.T) {
-	n := "(82+1077-192+80+10)-161"
+	n := "(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800"
 	f := brackets(n)
-	assert.Equal(t, "82+1077-192+80+10", f)
+	assert.Equal(t, "91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636", f)
 	n = strings.Replace(n, "("+f+")", calc(f), 1)
-	assert.Equal(t, "1057-161", n)
+	assert.Equal(t, "4999999%800", n)
 }
 
 func TestFindMul(t *testing.T) {
-	n := "(82+1077*192+80+10)-161"
-	assert.Equal(t, "1077*192", findMul(n))
+	n := "(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800"
+	fm, pm := findMul(n)
+	assert.Equal(t, "91*1012", fm)
+	assert.Equal(t, 1, pm)
 }
 
 func TestIsNumeric(t *testing.T) {
@@ -90,25 +92,40 @@ func TestIsNumeric(t *testing.T) {
 
 func TestGetNearNumbers(t *testing.T) {
 	n := "(82+1077*192+80+10)"
-	assert.Equal(t, "1077*192", getNearNumbers(n, 8))
+	f, p := getNearNumbers(n, 8)
+	assert.Equal(t, "1077*192", f)
+	assert.Equal(t, 4, p)
 }
 
 func TestGetTwoNumber(t *testing.T) {
-	n := "(82+1077*192+80+10)"
-	left, right := getTwoNumber(n, 8)
-	assert.Equal(t, "1077", left)
-	assert.Equal(t, "192", right)
+	n := "(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800"
+	left, right, p := getTwoNumber(n, 3)
+	assert.Equal(t, "91", left)
+	assert.Equal(t, "1012", right)
+	assert.Equal(t, 1, p)
 }
 
+func TestRotate(t *testing.T) {
+	n := []string{"0", "1", "2"}
+	n = rotate(n, 0)
+	assert.Equal(t, n[0], "0")
+	n = rotate(n, 1)
+	assert.Equal(t, n[0], "1")
+	n = rotate(n, 3)
+	assert.Equal(t, n[0], "1")
+}
+
+// BenchmarkCalc-4   	    1000	   1501164 ns/op	 6640568 B/op	    5498 allocs/op
 func BenchmarkCalc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		calc("(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800")
 	}
 }
 
-func BenchmarkCalc2(b *testing.B) {
+func BenchmarkCal(b *testing.B) {
+	cal := NewCal()
 	for i := 0; i < b.N; i++ {
-		calc2("(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800")
+		cal.MustCal("(91*1012+121*1463+82+1077+192+80+10+161+134+2155+2+45+240+80+69*3128+200+4011+241*5072+270+8081+106+2449+251*6035+265*6636)%800")
 	}
 }
 
@@ -154,7 +171,8 @@ func BenchmarkCompareNotEqual(b *testing.B) {
 	length := len(n)
 	for i := 0; i < b.N; i++ {
 		for r := 0; r < length; r++ {
-			_ = isNumeric(n[r])
+			c := n[r]
+			_ = c != '+' && c != '-' && c != '*' && c != '%' && c != '(' && c != ')'
 		}
 	}
 }
